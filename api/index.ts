@@ -1,3 +1,4 @@
-import app from "../artifacts/api-server/src/app.js";
+// @ts-ignore
+import app from "../artifacts/api-server/bundle/index.cjs";
 
-export default app;
+export default (app as any).default || app;
