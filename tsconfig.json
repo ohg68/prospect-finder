@@ -1,0 +1,16 @@
+{
+  "files": [],
+  "compilerOptions": {
+    "baseUrl": ".",
+    "paths": {
+      "@workspace/*": ["lib/*", "artifacts/*"]
+    }
+  },
+  "references": [
+    { "path": "./lib/api-client-react" },
+    { "path": "./lib/api-zod" },
+    { "path": "./lib/db" },
+    { "path": "./lib/integrations-openai-ai-react" },
+    { "path": "./lib/integrations-openai-ai-server" }
+  ]
+}

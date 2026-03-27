@@ -1,0 +1,462 @@
+openapi: 3.1.0
+info:
+  title: Api
+  version: 0.1.0
+  description: Prospect Finder API
+servers:
+  - url: /api
+    description: Base API path
+tags:
+  - name: health
+    description: Health operations
+  - name: prospects
+    description: Prospect search and management
+  - name: saved
+    description: Saved prospects management
+paths:
+  /healthz:
+    get:
+      operationId: healthCheck
+      tags: [health]
+      summary: Health check
+      description: Returns server health status
+      responses:
+        "200":
+          description: Healthy
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/HealthStatus"
+
+  /prospects/search:
+    get:
+      operationId: searchProspects
+      tags: [prospects]
+      summary: Search prospects
+      description: Search for prospects by various criteria
+      parameters:
+        - name: mode
+          in: query
+          required: true
+          schema:
+            type: string
+            enum: [key_people, by_company, specific_person]
+          description: Search mode
+        - name: company
+          in: query
+          schema:
+            type: string
+          description: Company name filter
+        - name: country
+          in: query
+          schema:
+            type: string
+          description: Country filter
+        - name: city
+          in: query
+          schema:
+            type: string
+          description: City filter
+        - name: position
+          in: query
+          schema:
+            type: string
+          description: Job position/title filter
+        - name: department
+          in: query
+          schema:
+            type: string
+          description: Department filter
+        - name: name
+          in: query
+          schema:
+            type: string
+          description: Person name filter (for specific_person mode)
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+          description: Page number
+        - name: pageSize
+          in: query
+          schema:
+            type: integer
+            default: 20
+          description: Results per page
+      responses:
+        "200":
+          description: Search results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProspectSearchResult"
+
+  /prospects/{id}:
+    get:
+      operationId: getProspect
+      tags: [prospects]
+      summary: Get prospect details
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Prospect details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Prospect"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /saved-prospects:
+    get:
+      operationId: getSavedProspects
+      tags: [saved]
+      summary: Get saved prospects
+      responses:
+        "200":
+          description: List of saved prospects
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/SavedProspect"
+    post:
+      operationId: saveProspect
+      tags: [saved]
+      summary: Save a prospect
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/SaveProspectRequest"
+      responses:
+        "201":
+          description: Saved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SavedProspect"
+
+  /saved-prospects/{id}:
+    delete:
+      operationId: deleteSavedProspect
+      tags: [saved]
+      summary: Remove a saved prospect
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/SuccessResponse"
+
+  /stats:
+    get:
+      operationId: getStats
+      tags: [prospects]
+      summary: Get database stats
+      responses:
+        "200":
+          description: Statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/StatsResponse"
+
+  /prospects/{id}/enrich:
+    post:
+      operationId: enrichProspect
+      tags: [prospects]
+      summary: Enrich prospect with web data
+      description: Searches the web for public contact info, social profiles and press mentions
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Enrichment results
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrichmentResult"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /prospects/{id}/enrichment:
+    get:
+      operationId: getProspectEnrichment
+      tags: [prospects]
+      summary: Get stored enrichment data for a prospect
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Enrichment data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/EnrichmentResult"
+        "404":
+          description: No enrichment data found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+components:
+  schemas:
+    HealthStatus:
+      type: object
+      properties:
+        status:
+          type: string
+      required:
+        - status
+
+    Prospect:
+      type: object
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        position:
+          type: string
+        department:
+          type: string
+        company:
+          type: string
+        country:
+          type: string
+        city:
+          type: string
+        email:
+          type: string
+        phone:
+          type: string
+        linkedinUrl:
+          type: string
+        seniority:
+          type: string
+        industry:
+          type: string
+        notes:
+          type: string
+        createdAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - name
+        - company
+
+    ProspectSearchResult:
+      type: object
+      properties:
+        prospects:
+          type: array
+          items:
+            $ref: "#/components/schemas/Prospect"
+        total:
+          type: integer
+        page:
+          type: integer
+        pageSize:
+          type: integer
+        totalPages:
+          type: integer
+      required:
+        - prospects
+        - total
+        - page
+        - pageSize
+        - totalPages
+
+    SaveProspectRequest:
+      type: object
+      properties:
+        prospectId:
+          type: integer
+        listName:
+          type: string
+        notes:
+          type: string
+      required:
+        - prospectId
+
+    SavedProspect:
+      type: object
+      properties:
+        id:
+          type: integer
+        prospectId:
+          type: integer
+        listName:
+          type: string
+        notes:
+          type: string
+        prospect:
+          $ref: "#/components/schemas/Prospect"
+        savedAt:
+          type: string
+          format: date-time
+      required:
+        - id
+        - prospectId
+        - prospect
+
+    StatsResponse:
+      type: object
+      properties:
+        totalProspects:
+          type: integer
+        totalCompanies:
+          type: integer
+        totalCountries:
+          type: integer
+        topCountries:
+          type: array
+          items:
+            type: object
+            properties:
+              country:
+                type: string
+              count:
+                type: integer
+            required:
+              - country
+              - count
+        topIndustries:
+          type: array
+          items:
+            type: object
+            properties:
+              industry:
+                type: string
+              count:
+                type: integer
+            required:
+              - industry
+              - count
+      required:
+        - totalProspects
+        - totalCompanies
+        - totalCountries
+        - topCountries
+        - topIndustries
+
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    SuccessResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+      required:
+        - success
+
+    SocialProfile:
+      type: object
+      properties:
+        platform:
+          type: string
+        url:
+          type: string
+        username:
+          type: string
+      required:
+        - platform
+        - url
+
+    PressItem:
+      type: object
+      properties:
+        title:
+          type: string
+        url:
+          type: string
+        source:
+          type: string
+        date:
+          type: string
+        snippet:
+          type: string
+      required:
+        - title
+        - url
+
+    EnrichmentResult:
+      type: object
+      properties:
+        prospectId:
+          type: integer
+        email:
+          type: string
+        alternativeEmails:
+          type: array
+          items:
+            type: string
+        phone:
+          type: string
+        linkedinUrl:
+          type: string
+        socialProfiles:
+          type: array
+          items:
+            $ref: "#/components/schemas/SocialProfile"
+        pressItems:
+          type: array
+          items:
+            $ref: "#/components/schemas/PressItem"
+        summary:
+          type: string
+        confidence:
+          type: string
+          enum: [high, medium, low]
+        enrichedAt:
+          type: string
+          format: date-time
+        sources:
+          type: array
+          items:
+            type: string
+      required:
+        - prospectId
+        - socialProfiles
+        - pressItems
+        - sources

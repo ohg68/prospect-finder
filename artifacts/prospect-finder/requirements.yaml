@@ -1,0 +1,11 @@
+packages:
+  "framer-motion": "For elegant page transitions and list staggering"
+  "recharts": "For rendering beautiful statistics charts"
+  "lucide-react": "For professional, clean icons"
+  "clsx": "For conditional class merging"
+  "tailwind-merge": "For merging tailwind classes safely"
+  "@tanstack/react-query": "Already in stack, explicitly declaring for safety"
+
+notes:
+  - "App uses generated React Query hooks from @workspace/api-client-react as per implementation notes."
+  - "Using framer-motion for bespoke modals and animations to guarantee visual excellence."

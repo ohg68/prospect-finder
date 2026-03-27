@@ -1,0 +1,30 @@
+{
+  "name": "workspace",
+  "version": "0.0.0",
+  "license": "MIT",
+  "scripts": {
+    "preinstall": "sh -c 'rm -f package-lock.json yarn.lock; case \"$npm_config_user_agent\" in pnpm/*) ;; *) echo \"Use pnpm instead\" >&2; exit 1 ;; esac'",
+    "build": "pnpm -r --if-present run build && mkdir -p public && cp -r artifacts/prospect-finder/dist/public/* public/",
+    "build:app": "pnpm --filter @workspace/prospect-finder run build",
+    "dev": "concurrently -n \"api,app\" -c \"magenta,cyan\" \"PORT=5001 pnpm --filter @workspace/api-server dev\" \"PORT=3000 pnpm --filter @workspace/prospect-finder dev\"",
+    "typecheck:libs": "tsc --build",
+    "typecheck": "pnpm run typecheck:libs && pnpm -r --filter \"./artifacts/**\" --filter \"./scripts\" --if-present run typecheck"
+  },
+  "dependencies": {
+    "express": "^5",
+    "cors": "^2",
+    "cookie-parser": "^1.4.7",
+    "pg": "^8.13.1",
+    "dotenv": "catalog:",
+    "@workspace/db": "workspace:*",
+    "@workspace/api-zod": "workspace:*",
+    "@workspace/integrations-openai-ai-server": "workspace:*"
+  },
+  "private": true,
+  "devDependencies": {
+    "concurrently": "^9.1.2",
+    "prettier": "^3.8.1",
+    "typescript": "~5.9.2",
+    "vercel": "^50.32.3"
+  }
+}
