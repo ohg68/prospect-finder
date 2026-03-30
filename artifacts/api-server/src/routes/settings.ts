@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { db as dbInstance, sql as dSql } from "../../../../lib/db/src/index.js";
+import { clearAIConfigCache } from "../config/ai-config.js";
 const db: any = dbInstance;
 const sql: any = dSql;
 
@@ -78,6 +79,9 @@ router.post("/ai", async (req: any, res: any) => {
         isActive: row.is_active
       } : null);
     }
+
+    // Clear cached AI config so next request picks up the new settings
+    clearAIConfigCache();
   } catch (err) {
     res.status(500).json({ error: String(err) });
   }
