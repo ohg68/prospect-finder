@@ -31,12 +31,17 @@ router.patch("/saved/:id/pipeline", async (req: any, res: any) => {
     return;
   }
 
-  const updateData: any = {};
-  if (pipelineStage !== undefined) updateData.pipelineStage = pipelineStage;
-  if (pipelineNotes !== undefined) updateData.pipelineNotes = pipelineNotes;
-  if (lastContactedAt !== undefined) updateData.lastContactedAt = lastContactedAt ? new Date(lastContactedAt) : null;
-  if (nextActionAt !== undefined) updateData.nextActionAt = nextActionAt ? new Date(nextActionAt) : null;
-  if (cadenceStep !== undefined) updateData.cadenceStep = cadenceStep;
+  const updateData: Record<string, any> = {};
+  if (pipelineStage !== undefined) updateData.pipeline_stage = pipelineStage;
+  if (pipelineNotes !== undefined) updateData.pipeline_notes = pipelineNotes;
+  if (lastContactedAt !== undefined) updateData.last_contacted_at = lastContactedAt ? new Date(lastContactedAt) : null;
+  if (nextActionAt !== undefined) updateData.next_action_at = nextActionAt ? new Date(nextActionAt) : null;
+  if (cadenceStep !== undefined) updateData.cadence_step = cadenceStep;
+
+  if (Object.keys(updateData).length === 0) {
+    res.status(400).json({ error: "No fields to update" });
+    return;
+  }
 
   try {
     const result = await db.execute(sql`
