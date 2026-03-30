@@ -77,14 +77,18 @@ export type ProspectEnrichment = typeof prospectEnrichmentsTable.$inferSelect;
 // --- CONVERSATIONS ---
 export const conversationsTable = pgTable("conversations", {
   id: serial("id").primaryKey(),
-  prospectId: integer("prospect_id").notNull().references(() => prospectsTable.id, { onDelete: "cascade" }),
-  platform: text("platform").notNull(),
-  platformConversationId: text("platform_conversation_id").notNull(),
+  prospectId: integer("prospect_id").references(() => prospectsTable.id, { onDelete: "cascade" }),
+  platform: text("platform"),
+  platformConversationId: text("platform_conversation_id"),
+  title: text("title"),
+  externalId: text("external_id"),
   status: text("status").default("active"),
+  isAutoAgentEnabled: text("is_auto_agent_enabled").default("false"),
   lastMessageAt: timestamp("last_message_at").defaultNow().notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 }, (table) => ({
   platformConvIdx: index("conversations_platform_conv_idx").on(table.platform, table.platformConversationId),
+  externalIdIdx: index("conversations_external_id_idx").on(table.externalId),
 }));
 
 export const conversations = conversationsTable; // Alias for compatibility
@@ -110,9 +114,9 @@ export type Message = typeof messagesTable.$inferSelect;
 // --- CACHE ---
 export const searchCacheTable = pgTable("search_cache", {
   id: serial("id").primaryKey(),
-  queryKey: text("query_key").notNull().unique(),
-  results: jsonb("results").notNull().$type<any[]>(),
-  expiresAt: timestamp("expires_at").notNull(),
+  key: text("key").notNull().unique(),
+  value: jsonb("value").notNull().$type<any>(),
+  engine: text("engine"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
 });
 
