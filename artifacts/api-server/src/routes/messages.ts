@@ -1,6 +1,5 @@
 import { Router } from "express";
-import { openai } from "@workspace/integrations-openai-ai-server";
-import { AI_MODELS } from "../config/ai-config.js";
+import { getAIClient, getModel } from "../config/ai-config.js";
 import { db as dbInstance, prospectsTable as pT, prospectEnrichmentsTable as pET, eq as dEq } from "@workspace/db";
 const db: any = dbInstance;
 const prospectsTable: any = pT;
@@ -8,17 +7,6 @@ const prospectEnrichmentsTable: any = pET;
 const eq: any = dEq;
 
 const router = Router();
-
-import { aiConfigurations } from "@workspace/db";
-
-// Helper to get active AI or fallback to env
-async function getRawAIConfig() {
-  const [dbConfig] = await db.select().from(aiConfigurations).where(eq(aiConfigurations.isActive, true)).limit(1);
-  return {
-    baseUrl: dbConfig?.baseUrl || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1",
-    apiKey: dbConfig?.apiKey || process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "",
-  };
-}
 
 interface CadenceStep {
   day: number;
@@ -109,24 +97,16 @@ Responde SOLO con este JSON válido (sin markdown):
 }`;
 
   try {
-    const aiConfig = await getRawAIConfig();
-    const res = await fetch(`${aiConfig.baseUrl}/chat/completions`, {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${aiConfig.apiKey}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: AI_MODELS.CHAT || "gpt-4o",
-        max_completion_tokens: 2000,
-        messages: [{ role: "user", content: prompt }],
-      }),
-      signal: (AbortSignal as any).timeout?.(30000) || null,
-    }) as any;
+    const client = await getAIClient();
+    const model = await getModel();
 
-    if (!res.ok) throw new Error(`OpenAI error: ${res.status}`);
-    const data = await res.json() as { choices?: Array<{ message?: { content?: string } }> };
-    const raw = data.choices?.[0]?.message?.content ?? "";
+    const aiRes = await client.chat.completions.create({
+      model,
+      max_completion_tokens: 2000,
+      messages: [{ role: "user", content: prompt }],
+    });
+
+    const raw = aiRes.choices[0]?.message?.content ?? "";
 
     const jsonMatch = raw.match(/\{[\s\S]+\}/);
     if (!jsonMatch) throw new Error("No JSON found");
