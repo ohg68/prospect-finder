@@ -7,25 +7,9 @@ const whatsappConfigurations: any = waCT;
 const eq: any = dEq;
 const and: any = dAnd;
 const sql: any = dSql;
-import { AI_MODELS } from "../config/ai-config.js";
-import { openai } from "../../../../lib/integrations-openai-ai-server/src/index.js";
+import { getAIClient, getModel } from "../config/ai-config.js";
 
 const router = Router();
-
-import OpenAI from "openai";
-
-// Helper to get active AI or fallback to env
-async function getAIClient() {
-  const result = await db.execute(sql`SELECT * FROM ai_configurations WHERE is_active = true LIMIT 1`);
-  const dbConfig = result.rows[0];
-  const baseUrl = dbConfig?.base_url || process.env.AI_INTEGRATIONS_OPENAI_BASE_URL || "https://api.openai.com/v1";
-  const apiKey = dbConfig?.api_key || process.env.AI_INTEGRATIONS_OPENAI_API_KEY || "";
-  
-  return new OpenAI({
-    apiKey,
-    baseURL: baseUrl,
-  });
-}
 
 // Helper to get active WhatsApp config or fallback to env
 async function getActiveWhatsAppConfig() {
@@ -124,8 +108,9 @@ async function triggerAgent(conversationId: number, to: string) {
 
   // 3. Call AI
   const client = await getAIClient();
+  const model = await getModel();
   const completion = await client.chat.completions.create({
-    model: AI_MODELS.CHAT,
+    model,
     messages: [systemPrompt, ...aiMessages],
   });
 
