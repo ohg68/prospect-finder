@@ -103,6 +103,92 @@ export async function getModel(): Promise<string> {
   return config.model;
 }
 
+/**
+ * Universal AI chat call — handles parameter differences between providers.
+ * Use this instead of calling client.chat.completions.create directly.
+ */
+export async function aiChat(opts: {
+  messages: Array<{ role: string; content: string }>;
+  maxTokens?: number;
+  stream?: false;
+}): Promise<string> {
+  const config = await getActiveAIConfig();
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl });
+
+  // Build params compatible with ALL providers
+  const params: any = {
+    model: config.model,
+    messages: opts.messages,
+  };
+
+  // Token limit — different providers use different parameter names
+  if (opts.maxTokens) {
+    if (config.provider === "gemini") {
+      // Gemini only supports max_tokens, not max_completion_tokens
+      params.max_tokens = opts.maxTokens;
+    } else {
+      // OpenAI, DeepSeek, Groq, Together, OpenRouter all support this
+      params.max_completion_tokens = opts.maxTokens;
+    }
+  }
+
+  try {
+    const res = await client.chat.completions.create(params);
+    return res.choices[0]?.message?.content ?? "";
+  } catch (err) {
+    console.error(`[AI ${config.provider}] Chat error:`, err);
+    // If max_completion_tokens failed, retry with max_tokens as fallback
+    if (params.max_completion_tokens) {
+      try {
+        delete params.max_completion_tokens;
+        params.max_tokens = opts.maxTokens;
+        const res = await client.chat.completions.create(params);
+        return res.choices[0]?.message?.content ?? "";
+      } catch (retryErr) {
+        console.error(`[AI ${config.provider}] Retry with max_tokens also failed:`, retryErr);
+      }
+    }
+    throw err;
+  }
+}
+
+/**
+ * Universal AI streaming chat — for SSE endpoints like /chat
+ */
+export async function aiChatStream(opts: {
+  messages: Array<{ role: string; content: string }>;
+  maxTokens?: number;
+}): Promise<AsyncIterable<any>> {
+  const config = await getActiveAIConfig();
+  const client = new OpenAI({ apiKey: config.apiKey, baseURL: config.baseUrl });
+
+  const params: any = {
+    model: config.model,
+    messages: opts.messages,
+    stream: true,
+  };
+
+  if (opts.maxTokens) {
+    if (config.provider === "gemini") {
+      params.max_tokens = opts.maxTokens;
+    } else {
+      params.max_completion_tokens = opts.maxTokens;
+    }
+  }
+
+  try {
+    return await client.chat.completions.create(params);
+  } catch (err) {
+    // Fallback: retry with max_tokens
+    if (params.max_completion_tokens) {
+      delete params.max_completion_tokens;
+      params.max_tokens = opts.maxTokens;
+      return await client.chat.completions.create(params);
+    }
+    throw err;
+  }
+}
+
 // Legacy export for backward compatibility
 export const AI_MODELS = {
   CHAT: "gpt-4o-mini",

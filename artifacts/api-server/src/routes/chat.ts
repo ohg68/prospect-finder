@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAIClient, getModel } from "../config/ai-config.js";
+import { aiChatStream } from "../config/ai-config.js";
 
 const router = Router();
 
@@ -78,23 +78,18 @@ router.post("/chat", async (req: any, res: any) => {
   const systemContent = SYSTEM_PROMPT + (contextNote ? `\n\n${contextNote}` : "");
 
   try {
-    const client = await getAIClient();
-    const model = await getModel();
-
     res.setHeader("Content-Type", "text/event-stream");
     res.setHeader("Cache-Control", "no-cache");
     res.setHeader("Connection", "keep-alive");
     res.setHeader("X-Accel-Buffering", "no");
     res.flushHeaders();
 
-    const stream = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 800,
+    const stream = await aiChatStream({
       messages: [
         { role: "system", content: systemContent },
         ...validMessages,
       ],
-      stream: true,
+      maxTokens: 800,
     });
 
     for await (const chunk of stream) {

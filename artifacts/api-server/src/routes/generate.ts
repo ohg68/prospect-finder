@@ -9,7 +9,7 @@ const and: any = dAnd;
 const ilike: any = dILike;
 const eq: any = dEq;
 const sql: any = dSql;
-import { getAIClient, getModel, getActiveAIConfig } from "../config/ai-config.js";
+import { aiChat } from "../config/ai-config.js";
 
 const router = Router();
 
@@ -59,16 +59,10 @@ async function webSearch(query: string, timeoutMs = 50000): Promise<string> {
       }
     }
 
-    const client = await getAIClient();
-    const model = await getModel();
-
-    const aiRes = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 2000,
+    const text = await aiChat({
       messages: [{ role: "user", content: query }],
+      maxTokens: 2000,
     });
-
-    const text = aiRes.choices[0]?.message?.content ?? "";
 
     if (text.trim()) {
       // Save to cache
@@ -162,16 +156,12 @@ Responde SOLO con JSON válido (sin markdown, sin explicaciones adicionales):
 {"prospects":[{"name":"Nombre Apellido real","position":"Cargo exacto del texto","department":"Departamento","company":"${company}","country":"${country ?? ""}","city":"Ciudad si se conoce o vacío","seniority":"C-Level|Director|VP|Manager|Head|Senior","industry":"Sector","email":"email encontrado o null","linkedinUrl":"URL linkedin.com/in/... exacta o null","twitterUrl":"URL twitter o null"}]}`;
 
   try {
-    const client = await getAIClient();
-    const model = await getModel();
-    const aiRes = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 3000,
+    const content = await aiChat({
       messages: [{ role: "user", content: consolidatePrompt }],
+      maxTokens: 3000,
     });
 
-    const content = aiRes.choices[0]?.message?.content ?? "{}";
-    const parsed = JSON.parse(content) as { prospects?: GeneratedProspect[] };
+    const parsed = JSON.parse(content || "{}") as { prospects?: GeneratedProspect[] };
     if (Array.isArray(parsed.prospects) && parsed.prospects.length > 0) {
       return parsed.prospects;
     }
@@ -230,17 +220,13 @@ Nombres coherentes con el país indicado. Cargos relevantes (C-Level, Director, 
 Responde SOLO con JSON:
 {"prospects":[{"name":"Nombre","position":"Cargo","department":"Dept","company":"${company ?? "Empresa"}","country":"${country ?? ""}","city":"","seniority":"Manager","industry":"","email":null,"linkedinUrl":null}]}`;
 
-  const client = await getAIClient();
-  const model = await getModel();
-  const aiRes = await client.chat.completions.create({
-    model,
-    max_completion_tokens: 2000,
+  const raw = await aiChat({
     messages: [{ role: "user", content: prompt }],
+    maxTokens: 2000,
   });
 
-  const raw = aiRes.choices[0]?.message?.content ?? "{}";
   try {
-    const parsed = JSON.parse(raw) as { prospects?: GeneratedProspect[] };
+    const parsed = JSON.parse(raw || "{}") as { prospects?: GeneratedProspect[] };
     return Array.isArray(parsed.prospects) ? parsed.prospects : [];
   } catch {
     return [];

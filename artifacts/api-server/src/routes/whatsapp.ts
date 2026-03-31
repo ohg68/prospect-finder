@@ -7,7 +7,7 @@ const whatsappConfigurations: any = waCT;
 const eq: any = dEq;
 const and: any = dAnd;
 const sql: any = dSql;
-import { getAIClient, getModel } from "../config/ai-config.js";
+import { aiChat } from "../config/ai-config.js";
 
 const router = Router();
 
@@ -107,14 +107,10 @@ async function triggerAgent(conversationId: number, to: string) {
   };
 
   // 3. Call AI
-  const client = await getAIClient();
-  const model = await getModel();
-  const completion = await client.chat.completions.create({
-    model,
+  const responseText = await aiChat({
     messages: [systemPrompt, ...aiMessages],
+    maxTokens: 500,
   });
-
-  const responseText = completion.choices[0]?.message?.content;
 
   if (responseText) {
     // 4. Save AI Response

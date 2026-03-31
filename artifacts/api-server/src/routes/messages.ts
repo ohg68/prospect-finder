@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAIClient, getModel } from "../config/ai-config.js";
+import { aiChat } from "../config/ai-config.js";
 import { db as dbInstance, prospectsTable as pT, prospectEnrichmentsTable as pET, eq as dEq } from "@workspace/db";
 const db: any = dbInstance;
 const prospectsTable: any = pT;
@@ -97,16 +97,10 @@ Responde SOLO con este JSON válido (sin markdown):
 }`;
 
   try {
-    const client = await getAIClient();
-    const model = await getModel();
-
-    const aiRes = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 2000,
+    const raw = await aiChat({
       messages: [{ role: "user", content: prompt }],
+      maxTokens: 2000,
     });
-
-    const raw = aiRes.choices[0]?.message?.content ?? "";
 
     const jsonMatch = raw.match(/\{[\s\S]+\}/);
     if (!jsonMatch) throw new Error("No JSON found");

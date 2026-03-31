@@ -10,7 +10,7 @@ const and: any = dAnd;
 const sql: any = dSql;
 const desc: any = dDesc;
 const count: any = dCount;
-import { getAIClient, getModel } from "../config/ai-config.js";
+import { aiChat } from "../config/ai-config.js";
 
 const router = Router();
 
@@ -101,16 +101,10 @@ Responde SOLO con JSON (sin markdown):
       }
     }
 
-    const client = await getAIClient();
-    const model = await getModel();
-
-    const aiRes = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 1500,
+    const rawText = await aiChat({
       messages: [{ role: "user", content: prompt }],
+      maxTokens: 1500,
     });
-
-    const rawText = aiRes.choices[0]?.message?.content ?? "";
     const jsonMatch = rawText.match(/\{[\s\S]+\}/);
     if (!jsonMatch) return [];
     const parsed = JSON.parse(jsonMatch[0]) as { events?: TriggerEvent[] };
@@ -249,16 +243,10 @@ Reemplaza los valores con datos reales encontrados. Para alternativeEmails conse
     }
 
     if (!parsed || Object.keys(parsed).length === 0) {
-      const client = await getAIClient();
-      const model = await getModel();
-
-      const aiRes = await client.chat.completions.create({
-        model,
-        max_completion_tokens: 2000,
+      rawText = await aiChat({
         messages: [{ role: "user", content: prompt }],
+        maxTokens: 2000,
       });
-
-      rawText = aiRes.choices[0]?.message?.content ?? "";
 
       // Extract JSON from response (may have text before/after)
       const jsonMatch = rawText.match(/\{[\s\S]+\}/);

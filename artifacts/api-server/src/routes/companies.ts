@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { getAIClient, getModel } from "../config/ai-config.js";
+import { aiChat } from "../config/ai-config.js";
 import { db as dbInstance, searchCacheTable as sCT, eq as dEq } from "@workspace/db";
 import crypto from "crypto";
 const db: any = dbInstance;
@@ -221,19 +221,14 @@ GENERA el siguiente JSON completando TODOS los campos obligatorios:
 
 IMPORTANTE: Los campos "description", "industry", "headquarters" y "summary" son OBLIGATORIOS. Nunca los dejes vacíos o null.`;
 
-    const client = await getAIClient();
-    const model = await getModel();
-
-    const aiRes = await client.chat.completions.create({
-      model,
-      max_completion_tokens: 2000,
+    const aiContent = await aiChat({
       messages: [{ role: "user", content: aiPrompt }],
-      response_format: { type: "json_object" },
+      maxTokens: 2000,
     });
 
     let aiData: Record<string, unknown> = {};
     try {
-      aiData = JSON.parse(aiRes.choices[0]?.message?.content ?? "{}");
+      aiData = JSON.parse(aiContent);
     } catch {
       aiData = {};
     }
